@@ -26,3 +26,25 @@ def create_pool(loop,**kwargs):
         minsize = kwargs.get('minsize',1),
         loop = loop
     )
+
+@asyncio.coroutine
+def select(sql, args,size=None):
+    '''
+    执行SELECT语句，用我们select函数执行。
+    :param sql:
+    :param args:
+    :param size:
+    :return:
+    '''
+    logging.log(sql, args)
+    global __pool
+    with (yield from __pool) as conn:
+        cur = yield from conn.cursor(aiomysql.DictCursor)
+        yield from cur.execute(sql.replace('?','%'), args or ())
+        if size:
+            rs = yield from cur.fetchmany(size)
+        else:
+            rs = yield from cur.fetchall()
+        yield from cur.close()
+        logging.info('rows return: %s'%len(rs))
+        return rs
