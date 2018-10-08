@@ -48,3 +48,24 @@ def select(sql, args,size=None):
         yield from cur.close()
         logging.info('rows return: %s'%len(rs))
         return rs
+
+@asyncio.coroutine
+def execute(sql, args):
+    '''
+    执行插入，更新，删除语句，定义可以通过一个的execute()函数，
+    因为这3中SQL都执行相同的参数，以及返回一个整数表示影响
+    的行数。
+    :param sql:
+    :param args:
+    :return:
+    '''
+    logging.log(sql)
+    with (yield from __pool) as conn:
+        try:
+            cur = yield from conn.cursor()
+            yield from cur.execute(sql.replace('?', '%s'), args)
+            affected = cur.rowcount
+            yield from cur.close()
+        except BaseException as e:
+            raise
+        return affected
